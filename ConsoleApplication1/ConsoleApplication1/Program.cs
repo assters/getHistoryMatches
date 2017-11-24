@@ -70,18 +70,37 @@ namespace ConsoleApplication1
             sr.Close();
             */
 
-            //datetime date1 = new datetime(1511540369);
-            //datetime date1970 = new datetime(1970, 1, 1, 0, 0, 1);
+            //DateTime  date1 = new DateTime (1511540369);
+            //DateTime  date1970 = new DateTime (1970, 1, 1, 0, 0, 1);
             //console.writeline(date1);
             //console.writeline(date1970);
             //date1970 = date1970.addseconds(1511540369);
             //console.writeline(date1970);
 
-            DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(txtJSON));
-            string fileContent = File.ReadAllText("F:\\1.json");
-            txtJSON jsonn = (txtJSON)json.ReadObject(new System.IO.MemoryStream(Encoding.UTF8.GetBytes(fileContent)));
-            Console.WriteLine();
-
+            /* DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(txtJSON));
+             string fileContent = File.ReadAllText("F:\\1.json");
+             txtJSON jsonn = (txtJSON)json.ReadObject(new System.IO.MemoryStream(Encoding.UTF8.GetBytes(fileContent)));
+             Console.WriteLine();
+             */
+            DateTime dateCur= DateTime.Now;
+            bool flag = true;
+            while (flag)//1 day
+            {
+                GETrequest;
+                if (respons != error)
+                {
+                    delete first match;
+                    saveAllMatchId;//parse json
+                    if ((lastMatchIdStartTime - curData) >= 1 day)
+			flag = false;
+                    start_at_match_id = lastMatchId;
+                }
+                else
+                {
+                    flag = false;
+                    write(error);
+                }
+            }
         }
     }
 }
