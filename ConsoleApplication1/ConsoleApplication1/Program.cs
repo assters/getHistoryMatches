@@ -72,33 +72,95 @@ namespace ConsoleApplication1
 
             //DateTime  date1 = new DateTime (1511540369);
             //DateTime  date1970 = new DateTime (1970, 1, 1, 0, 0, 1);
-            //console.writeline(date1);
-            //console.writeline(date1970);
-            //date1970 = date1970.addseconds(1511540369);
-            //console.writeline(date1970);
+            //Console.WriteLine(date1);
+            //Console.WriteLine(date1970);
+            //date1970 = date1970.AddSeconds(1511540369);
+            //Console.WriteLine(date1970);
 
             /* DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(txtJSON));
              string fileContent = File.ReadAllText("F:\\1.json");
              txtJSON jsonn = (txtJSON)json.ReadObject(new System.IO.MemoryStream(Encoding.UTF8.GetBytes(fileContent)));
              Console.WriteLine();
              */
-            DateTime dateCur= DateTime.Now;
+            DateTime startProgramDate = DateTime.Now;
             bool flag = true;
-            while (flag)//1 day
+
+            // выполнить один запрос для получения стартового ID матча
+            //GETrequest
+            System.Net.WebRequest req = System.Net.WebRequest.Create("https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/?key=5FFECD6C642F60635924C5FA6E81FBBD");
+            System.Net.WebResponse resp = req.GetResponse();
+            System.IO.Stream stream = resp.GetResponseStream();
+            System.IO.StreamReader sr = new System.IO.StreamReader(stream);
+            string Out = sr.ReadToEnd();
+            sr.Close();
+            int length = Out.Length;
+            //
+            if (length > 99)
             {
-                GETrequest;
-                if (respons != error)
+                //deserialize
+                DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(txtJSON));
+                txtJSON jsonn = (txtJSON)json.ReadObject(new System.IO.MemoryStream(Encoding.UTF8.GetBytes(Out)));
+            }
+            else
+            {
+                flag = false;
+                Console.WriteLine("Error, request error, size < 99");
+            }
+                        
+            // открыть файл для записи в него Id матчей
+            BinaryWriter binaryWriter = new BinaryWriter(File.Open("F:\\12.bin", FileMode.OpenOrCreate));
+            while (flag)//1 day 
+            {
+                //GETrequest
+                req = System.Net.WebRequest.Create("https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/?key=5FFECD6C642F60635924C5FA6E81FBBD");
+                resp = req.GetResponse();
+                stream = resp.GetResponseStream();
+                sr = new System.IO.StreamReader(stream);
+                Out = sr.ReadToEnd();
+                sr.Close();
+                length = Out.Length;
+                //
+                if (length > 99)
                 {
-                    delete first match;
-                    saveAllMatchId;//parse json
-                    if ((lastMatchIdStartTime - curData) >= 1 day)
-			flag = false;
-                    start_at_match_id = lastMatchId;
+                    //deserialize
+                    DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(txtJSON));
+                    txtJSON jsonn = (txtJSON)json.ReadObject(new System.IO.MemoryStream(Encoding.UTF8.GetBytes(Out)));
+                    //Match[] sassas = new Match[3];
+                    //for (int i = 0; i < 3; i++)
+                    //    sassas[i] = jsonn.result.matches[i];
+                    //Console.WriteLine();
+
+
+                    //     сохранили все id матчей кроме первого, так как первый был сохранен при прошлом запросе
+                    for (int counterMatch = 1; counterMatch < jsonn.result.num_results; counterMatch++)
+                    {
+                        binaryWriter.Write(jsonn.result.matches[counterMatch].match_id);
+                    }
+
+                    // перевод даты последнего в запросе матча
+                   // DateTime date1 = new DateTime(jsonn.result.matches[jsonn.result.num_results - 1].start_time);
+                    DateTime lastMatchDate = new DateTime(1970, 1, 1, 0, 0, 1);
+                    lastMatchDate = lastMatchDate.AddSeconds(jsonn.result.matches[jsonn.result.num_results - 1].start_time);
+                    //Console.WriteLine(lastMatchDate);
+                    //Console.WriteLine(lastMatchDate.Subtract(startProgramDate));
+                    
+                    //Console.WriteLine(lastMatchDate.Hour);
+                    //Console.WriteLine(lastMatchDate);
+                    //задать промежуток для выполнения запросов
+                    System.TimeSpan timeSpan = new TimeSpan(-6,0,0); //разница -  -6 часов, 0 минут, 0 секунд
+
+                    int lope = TimeSpan.Compare(timeSpan, lastMatchDate.Subtract(startProgramDate));
+                    //Console.WriteLine(lastMatchDate);
+                    if (lope > 0)       // если вышли за -6 часов
+                    {
+                        flag = false; //останавливаемся
+                    }
+                    //start_at_match_id = lastMatchId;  // меняем 
                 }
                 else
                 {
                     flag = false;
-                    write(error);
+                    Console.WriteLine("Error, request error, size < 99");
                 }
             }
         }
