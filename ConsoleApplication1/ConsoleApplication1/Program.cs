@@ -84,6 +84,7 @@ namespace ConsoleApplication1
              */
             DateTime startProgramDate = DateTime.Now;
             bool flag = true;
+            long start_at_match_id = 0;
 
             // выполнить один запрос для получения стартового ID матча
             //GETrequest
@@ -100,19 +101,24 @@ namespace ConsoleApplication1
                 //deserialize
                 DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(txtJSON));
                 txtJSON jsonn = (txtJSON)json.ReadObject(new System.IO.MemoryStream(Encoding.UTF8.GetBytes(Out)));
+                start_at_match_id = jsonn.result.matches[0].match_id;
             }
             else
             {
                 flag = false;
                 Console.WriteLine("Error, request error, size < 99");
             }
-                        
+
+            ulong iCount = 0;
+            ulong errCount = 0;
             // открыть файл для записи в него Id матчей
             BinaryWriter binaryWriter = new BinaryWriter(File.Open("F:\\12.bin", FileMode.OpenOrCreate));
             while (flag)//1 day 
             {
+                iCount++;
                 //GETrequest
-                req = System.Net.WebRequest.Create("https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/?key=5FFECD6C642F60635924C5FA6E81FBBD");
+                req = System.Net.WebRequest.Create("https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/?start_at_match_id="+ 
+                    start_at_match_id.ToString() + "&key=5FFECD6C642F60635924C5FA6E81FBBD");
                 resp = req.GetResponse();
                 stream = resp.GetResponseStream();
                 sr = new System.IO.StreamReader(stream);
@@ -125,6 +131,15 @@ namespace ConsoleApplication1
                     //deserialize
                     DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(txtJSON));
                     txtJSON jsonn = (txtJSON)json.ReadObject(new System.IO.MemoryStream(Encoding.UTF8.GetBytes(Out)));
+                    if (jsonn.result.num_results < 1)
+                    {
+                        System.Threading.Thread.Sleep(3000); //milliseconds
+                        errCount++;
+                        Console.WriteLine("TimeOut");
+                        if (errCount > 5) start_at_match_id--; ;
+                        continue;
+                    }
+                        
                     //Match[] sassas = new Match[3];
                     //for (int i = 0; i < 3; i++)
                     //    sassas[i] = jsonn.result.matches[i];
@@ -136,18 +151,17 @@ namespace ConsoleApplication1
                     {
                         binaryWriter.Write(jsonn.result.matches[counterMatch].match_id);
                     }
-
                     // перевод даты последнего в запросе матча
-                   // DateTime date1 = new DateTime(jsonn.result.matches[jsonn.result.num_results - 1].start_time);
+                    // DateTime date1 = new DateTime(jsonn.result.matches[jsonn.result.num_results - 1].start_time);
                     DateTime lastMatchDate = new DateTime(1970, 1, 1, 0, 0, 1);
                     lastMatchDate = lastMatchDate.AddSeconds(jsonn.result.matches[jsonn.result.num_results - 1].start_time);
-                    //Console.WriteLine(lastMatchDate);
+                    Console.WriteLine(lastMatchDate);
                     //Console.WriteLine(lastMatchDate.Subtract(startProgramDate));
                     
                     //Console.WriteLine(lastMatchDate.Hour);
                     //Console.WriteLine(lastMatchDate);
                     //задать промежуток для выполнения запросов
-                    System.TimeSpan timeSpan = new TimeSpan(-6,0,0); //разница -  -6 часов, 0 минут, 0 секунд
+                    System.TimeSpan timeSpan = new TimeSpan(-4,30,0); //разница -  -6 часов, 0 минут, 0 секунд
 
                     int lope = TimeSpan.Compare(timeSpan, lastMatchDate.Subtract(startProgramDate));
                     //Console.WriteLine(lastMatchDate);
@@ -155,13 +169,15 @@ namespace ConsoleApplication1
                     {
                         flag = false; //останавливаемся
                     }
-                    //start_at_match_id = lastMatchId;  // меняем 
+                    start_at_match_id = jsonn.result.matches[jsonn.result.num_results - 1].match_id; ;  // меняем на ID последнего матча
                 }
                 else
                 {
                     flag = false;
                     Console.WriteLine("Error, request error, size < 99");
                 }
+                System.Threading.Thread.Sleep(3000);
+                errCount = 0;
             }
         }
     }
